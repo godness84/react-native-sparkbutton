@@ -1,0 +1,28 @@
+
+{
+  "name": "react-native-sparkbutton",
+  "version": "0.0.1",
+  "description": "A button with Twitter's heart like animation",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/godness84/react-native-sparkbutton.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "spark-button",
+    "spark",
+    "twitter",
+    "heart",
+    "heart-animation",
+    "react-native"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^16.0.0-alpha.12",
+    "react-native": "^0.48.3"
+  }
+}
