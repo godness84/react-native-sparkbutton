@@ -33,12 +33,11 @@ import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.imagepipeline.request.ImageRequestBuilder;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.views.imagehelper.ImageSource;
-import com.varunest.sparkbutton.SparkEventListener;
 import com.varunest.sparkbutton.helpers.CircleView;
 import com.varunest.sparkbutton.helpers.DotsView;
 
 
-public class RNSparkButton extends FrameLayout implements View.OnClickListener {
+public class RNSparkButton extends FrameLayout {
     private static final String TAG = "SparkButton";
     private static final DecelerateInterpolator DECELERATE_INTERPOLATOR = new DecelerateInterpolator();
     private static final AccelerateDecelerateInterpolator ACCELERATE_DECELERATE_INTERPOLATOR = new AccelerateDecelerateInterpolator();
@@ -59,7 +58,6 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
     CircleView circleView;
     ImageView imageView;
 
-    boolean pressOnTouch = true;
     float animationSpeed = 1;
     boolean isChecked = false;
 
@@ -69,7 +67,6 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
     Bitmap inactiveImageBitmap;
 
     private AnimatorSet animatorSet;
-    private SparkEventListener listener;
     private boolean surrogateLayoutPassScheduled = false;
     private boolean isDirty = true;
 
@@ -85,6 +82,10 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
         ViewParent parent = getParent();
         if (parent != null) {
             ((ViewGroup)parent).setClipChildren(false);
+            parent = parent.getParent();
+            if (parent != null) {
+                ((ViewGroup)parent).setClipChildren(false);
+            }
         }
     }
 
@@ -94,6 +95,8 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
         final int wSize = View.MeasureSpec.getSize(widthMeasureSpec);
         final int hMode = View.MeasureSpec.getMode(heightMeasureSpec);
         final int hSize = View.MeasureSpec.getSize(heightMeasureSpec);
+		
+        //Log.d(TAG, "onMeasure: " + wMode + ", " + wSize + ", " + hMode + ", " + hSize);
 
         if (wMode == MeasureSpec.EXACTLY && hMode == MeasureSpec.EXACTLY) {
             imageSize = Math.min(wSize, hSize);
@@ -108,7 +111,7 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
     public void requestLayout() {
         super.requestLayout();
         if (!surrogateLayoutPassScheduled) {
-            Log.d(TAG, "requestLayout() called. Going to schedule a surrogate layout pass");
+            //Log.d(TAG, "requestLayout() called. Going to schedule a surrogate layout pass");
             surrogateLayoutPassScheduled = true;
             this.post(new Runnable() {
                 @Override
@@ -119,10 +122,23 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
                     );
                     RNSparkButton.this.layout(getLeft(), getTop(), getRight(), getBottom());
                     surrogateLayoutPassScheduled = false;
-                    Log.d(TAG, "surrogate layout pass executed");
+                    //Log.d(TAG, "surrogate layout pass executed");
                 }
             });
         }
+    }
+
+    public void setPressed(boolean pressed) {
+        if (pressed) {
+            this.imageView.animate().scaleX(0.8f).scaleY(0.8f).setDuration(150).setInterpolator(DECELERATE_INTERPOLATOR).start();
+        } else if (this.animatorSet == null || !this.animatorSet.isRunning()) {
+            this.imageView.animate().scaleX(1).scaleY(1).setInterpolator(DECELERATE_INTERPOLATOR).start();
+        }
+    }
+
+    public void setChecked(boolean checked) {
+        this.isChecked = checked;
+        this.isDirty = true;
     }
 
     public void setActiveImageSource(@Nullable ReadableMap source) {
@@ -234,106 +250,17 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                if (listener != null) {
-                    listener.onEventAnimationEnd(imageView,isChecked);
-                }
             }
 
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationEnd(animation);
-                if (listener != null) {
-                    listener.onEventAnimationStart(imageView,isChecked);
-                }
             }
         });
 
         animatorSet.start();
     }
 
-    /**
-     * Returns whether the button is checked (Active) or not.
-     *
-     * @return
-     */
-    public boolean isChecked() {
-        return isChecked;
-    }
-
-    /**
-     * Change Button State (Works only if both active and disabled image resource is defined)
-     *
-     * @param flag desired checked state of the button
-     */
-    public void setChecked(boolean flag) {
-        isChecked = flag;
-        isDirty = true;
-    }
-
-    public void setEventListener(SparkEventListener listener) {
-        this.listener = listener;
-    }
-
-    public void pressOnTouch(boolean pressOnTouch) {
-        this.pressOnTouch = pressOnTouch;
-        this.isDirty = true;
-    }
-
-    @Override
-    public void onClick(View v) {
-        isChecked = !isChecked;
-        isDirty = true;
-        maybeUpdateView();
-
-        if (animatorSet != null) {
-            animatorSet.cancel();
-        }
-        if (isChecked) {
-            circleView.setVisibility(View.VISIBLE);
-            dotsView.setVisibility(VISIBLE);
-            playAnimation();
-        } else {
-            dotsView.setVisibility(INVISIBLE);
-            circleView.setVisibility(View.GONE);
-        }
-        if (listener != null) {
-            listener.onEvent(imageView, isChecked);
-        }
-    }
-
-    private void setOnTouchListener() {
-        if (pressOnTouch) {
-            setOnTouchListener(new OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    switch (event.getAction()) {
-                        case MotionEvent.ACTION_DOWN:
-                            imageView.animate().scaleX(0.8f).scaleY(0.8f).setDuration(150).setInterpolator(DECELERATE_INTERPOLATOR);
-                            setPressed(true);
-                            break;
-
-                        case MotionEvent.ACTION_MOVE:
-                            break;
-
-                        case MotionEvent.ACTION_UP:
-                            imageView.animate().scaleX(1).scaleY(1).setInterpolator(DECELERATE_INTERPOLATOR);
-                            if (isPressed()) {
-                                performClick();
-                                setPressed(false);
-                            }
-                            break;
-
-                        case MotionEvent.ACTION_CANCEL:
-                            imageView.animate().scaleX(1).scaleY(1).setInterpolator(DECELERATE_INTERPOLATOR);
-                            break;
-                    }
-                    return true;
-                }
-            });
-        } else {
-            setOnTouchListener(null);
-        }
-    }
 
     void init() {
         LayoutInflater.from(getContext()).inflate(com.varunest.sparkbutton.R.layout.layout_spark_button, this, true);
@@ -342,7 +269,6 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
         dotsView = (DotsView) findViewById(com.varunest.sparkbutton.R.id.vDotsView);
         imageView = (ImageView) findViewById(com.varunest.sparkbutton.R.id.ivImage);
 
-        setOnClickListener(this);
         setClipChildren(false);
     }
 
@@ -397,9 +323,11 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
                 dataSource.subscribe(new BaseBitmapDataSubscriber() {
                     @Override
                     public void onNewResultImpl(@Nullable Bitmap bitmap) {
-                        activeImageBitmap = bitmap.copy(bitmap.getConfig(), true);
-                        isDirty = true;
-                        maybeUpdateView();
+                        if (bitmap != null) {
+                            activeImageBitmap = bitmap.copy(bitmap.getConfig(), true);
+                            isDirty = true;
+                            maybeUpdateView();
+                        }
                     }
 
                     @Override
@@ -426,9 +354,11 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
                 dataSource.subscribe(new BaseBitmapDataSubscriber() {
                     @Override
                     public void onNewResultImpl(@Nullable Bitmap bitmap) {
-                        inactiveImageBitmap = bitmap.copy(bitmap.getConfig(), true);
-                        isDirty = true;
-                        maybeUpdateView();
+                        if (bitmap != null) {
+                            inactiveImageBitmap = bitmap.copy(bitmap.getConfig(), true);
+                            isDirty = true;
+                            maybeUpdateView();
+                        }
                     }
 
                     @Override
@@ -437,24 +367,6 @@ public class RNSparkButton extends FrameLayout implements View.OnClickListener {
                     }
                 }, UiThreadImmediateExecutorService.getInstance());
             }
-
-            setOnTouchListener();
         }
     }
-
-    /*
-    private void getStuffFromXML(AttributeSet attr) {
-        TypedArray a = getContext().obtainStyledAttributes(attr, com.varunest.sparkbutton.R.styleable.sparkbutton);
-        imageSize = a.getDimensionPixelOffset(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_iconSize, Utils.dpToPx(getContext(), 50));
-        imageResourceIdActive = a.getResourceId(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_activeImage, INVALID_RESOURCE_ID);
-        imageResourceIdInactive = a.getResourceId(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_inActiveImage, INVALID_RESOURCE_ID);
-        primaryColor = ContextCompat.getColor(getContext(), a.getResourceId(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_primaryColor, com.varunest.sparkbutton.R.color.spark_primary_color));
-        secondaryColor = ContextCompat.getColor(getContext(), a.getResourceId(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_secondaryColor, com.varunest.sparkbutton.R.color.spark_secondary_color));
-        activeImageTint = ContextCompat.getColor(getContext(), a.getResourceId(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_activeImageTint, com.varunest.sparkbutton.R.color.spark_image_tint));
-        inActiveImageTint = ContextCompat.getColor(getContext(), a.getResourceId(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_inActiveImageTint, com.varunest.sparkbutton.R.color.spark_image_tint));
-        pressOnTouch = a.getBoolean(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_pressOnTouch, true);
-        animationSpeed = a.getFloat(com.varunest.sparkbutton.R.styleable.sparkbutton_sparkbutton_animationSpeed, 1);
-        // recycle typedArray
-        a.recycle();
-    }*/
 }
