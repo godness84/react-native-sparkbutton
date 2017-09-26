@@ -3,6 +3,8 @@
 
 A button with Twitter's heart explosion like animation (for Android).
 
+<img src="./art/showcase.gif" width="280" />
+
 ## Getting started
 
 `$ npm install react-native-sparkbutton --save`
