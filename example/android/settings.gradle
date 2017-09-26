@@ -1,0 +1,4 @@
+rootProject.name = 'Example'
+include ':react-native-sparkbutton'
+project(':react-native-sparkbutton').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-sparkbutton/android')
+include ':app'
