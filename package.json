@@ -1,7 +1,7 @@
 
 {
   "name": "react-native-sparkbutton",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A checkbox/button with Twitter's heart explosion like animation",
   "main": "index.js",
   "repository": {
