@@ -1,7 +1,8 @@
 
 # react-native-sparkbutton
 
-A button with Twitter's heart explosion like animation (for Android).
+A checked/button with Twitter's heart explosion like animation (for Android).
+Based on the Android library: https://github.com/varunest/SparkButton
 
 <img src="./art/showcase.gif" width="280" />
 
